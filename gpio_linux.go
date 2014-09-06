@@ -100,7 +100,6 @@ type pin struct {
 	valueFile     *os.File // the file handle for the value file
 	callback      IRQEvent // the callback function to call when an interrupt occurs
 	initial       bool     // is this the initial epoll trigger?
-	err           error    //the last error
 }
 
 // OpenPin exports the pin, creating the virtual files necessary for interacting with the pin.
@@ -122,7 +121,7 @@ func OpenPin(n int, mode Mode) (Pin, error) {
 		valueFile: value,
 		initial:   true,
 	}
-	if err := p.setMode(mode); err != nil {
+	if err := p.SetMode(mode); err != nil {
 		p.Close()
 		return nil, err
 	}
@@ -153,36 +152,33 @@ func (p *pin) Close() error {
 }
 
 // Mode retrieves the current mode of the pin.
-func (p *pin) Mode() Mode {
-	var mode string
-	mode, p.err = readFile(p.modePath)
-	return Mode(mode)
+func (p *pin) Mode() (Mode, error) {
+	mode, err := readFile(p.modePath)
+	return Mode(mode), err
 }
 
 // SetMode sets the mode of the pin.
-func (p *pin) SetMode(mode Mode) {
-	p.err = p.setMode(mode)
-}
-
-func (p *pin) setMode(mode Mode) error {
+func (p *pin) SetMode(mode Mode) error {
 	return write([]byte(mode), p.modePath)
 }
 
 // Set sets the pin level high.
-func (p *pin) Set() {
-	_, p.err = p.valueFile.Write(bytesSet)
+func (p *pin) Set() error {
+	_, err := p.valueFile.Write(bytesSet)
+	return err
 }
 
 // Clear sets the pin level low.
-func (p *pin) Clear() {
-	_, p.err = p.valueFile.Write(bytesClear)
+func (p *pin) Clear() error {
+	_, err := p.valueFile.Write(bytesClear)
+	return err
 }
 
 // Get retrieves the current pin level.
-func (p *pin) Get() bool {
+func (p *pin) Get() (bool, error) {
 	bytes := make([]byte, 1)
-	_, p.err = p.valueFile.ReadAt(bytes, 0)
-	return bytes[0] == bytesSet[0]
+	_, err := p.valueFile.ReadAt(bytes, 0)
+	return bytes[0] == bytesSet[0], err
 }
 
 // Watch waits for the edge level to be triggered and then calls the callback
@@ -239,11 +235,6 @@ func (p *pin) EndWatch() error {
 // Wait blocks while waits for the pin state to match the condition, then returns.
 func (p *pin) Wait(condition bool) {
 	panic("Wait is not yet implemented!")
-}
-
-// Err returns the last error encountered.
-func (p *pin) Err() error {
-	return p.err
 }
 
 func expose(pin int) (string, error) {
