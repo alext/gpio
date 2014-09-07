@@ -1,8 +1,16 @@
 package rpi
 
 import (
-	"github.com/davecheney/gpio"
+	"testing"
+
+	"github.com/alext/gpio"
 )
 
-// assert that rpi.pin implements gpio.Pin
-var _ gpio.Pin = new(pin)
+func TestImplementsPin(t *testing.T) {
+	var pin interface{} = new(pin)
+
+	_, ok := pin.(gpio.Pin)
+	if ! ok {
+		t.Error("Expected pin to implement gpio.Pin")
+	}
+}

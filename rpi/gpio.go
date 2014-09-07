@@ -5,7 +5,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/davecheney/gpio"
+	"github.com/alext/gpio"
 )
 
 var (
@@ -53,22 +53,24 @@ func OpenPin(number int, mode gpio.Mode) (gpio.Pin, error) {
 	return &pin{Pin: p, pin: uint8(number)}, err
 }
 
-func (p *pin) Set() {
+func (p *pin) Set() error {
 	offset := p.pin / 32
 	shift := p.pin % 32
 	*gpset[offset] = (1 << shift)
+	return nil
 }
 
-func (p *pin) Clear() {
+func (p *pin) Clear() error {
 	offset := p.pin / 32
 	shift := p.pin % 32
 	*gpclr[offset] = (1 << shift)
+	return nil
 }
 
-func (p *pin) Get() bool {
+func (p *pin) Get() (bool, error) {
 	offset := p.pin / 32
 	shift := p.pin % 32
-	return *gplev[offset]&(1<<shift) == (1 << shift)
+	return *gplev[offset]&(1<<shift) == (1 << shift), nil
 }
 
 func GPIOFSel(pin, mode uint8) {
